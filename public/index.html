@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plant Doctor — Diagnosis Tanaman Berbasis AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFEADC;
+    --paper-dark:#E4DCC6;
+    --ink:#1B3A2F;
+    --ink-deep:#122720;
+    --gold:#C99A3E;
+    --rust:#A8462E;
+    --healthy:#4C7A52;
+    --muted:#6B6552;
+    --card:#FBF9F2;
+    --line: rgba(27,58,47,0.15);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(27,58,47,0.07) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+  h1,h2,h3,.display{ font-family:'Fraunces', serif; }
+  .mono{ font-family:'IBM Plex Mono', monospace; letter-spacing:0.03em; }
+
+  a{ color:inherit; }
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 6vw;
+    background:rgba(239,234,220,0.9);
+    backdrop-filter: blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-size:1.15rem; font-weight:600;}
+  .brand-mark{
+    width:34px; height:34px; border-radius:50%;
+    background:var(--ink); color:var(--paper);
+    display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+  }
+  .nav-links{ display:flex; gap:28px; font-size:0.92rem; font-weight:500; }
+  .nav-links a{ text-decoration:none; opacity:0.75; transition:opacity .2s; }
+  .nav-links a:hover{ opacity:1; }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:64px 6vw 40px;
+    display:grid; grid-template-columns: 1.1fr 0.9fr; gap:48px; align-items:center;
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:0.75rem; text-transform:uppercase; color:var(--muted);
+    border:1px solid var(--line); padding:5px 12px; border-radius:100px;
+    margin-bottom:18px;
+  }
+  .eyebrow::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--healthy); }
+  .hero h1{
+    font-size: clamp(2.2rem, 4vw, 3.4rem);
+    line-height:1.08; font-weight:600; margin:0 0 18px;
+  }
+  .hero h1 em{ font-style:italic; color:var(--rust); }
+  .hero p{ font-size:1.05rem; color:var(--muted); max-width:46ch; margin:0 0 28px; line-height:1.6;}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:13px 24px; border-radius:6px; border:none; cursor:pointer;
+    font-family:'Inter'; font-weight:600; font-size:0.95rem;
+    text-decoration:none;
+  }
+  .btn-primary{ background:var(--ink); color:var(--paper); }
+  .btn-primary:hover{ background:var(--ink-deep); }
+  .btn-ghost{ background:transparent; border:1px solid var(--ink); color:var(--ink); }
+
+  /* scan-frame signature visual */
+  .scan-visual{
+    position:relative; aspect-ratio:1/1; border-radius:16px;
+    background: linear-gradient(160deg, #24493a, #123024);
+    overflow:hidden;
+    box-shadow: 0 20px 50px -20px rgba(18,39,32,0.5);
+  }
+  .scan-visual svg{ width:70%; height:70%; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); }
+  .corner{ position:absolute; width:26px; height:26px; border-color:var(--gold); }
+  .corner.tl{ top:16px; left:16px; border-top:2px solid; border-left:2px solid; }
+  .corner.tr{ top:16px; right:16px; border-top:2px solid; border-right:2px solid; }
+  .corner.bl{ bottom:16px; left:16px; border-bottom:2px solid; border-left:2px solid; }
+  .corner.br{ bottom:16px; right:16px; border-bottom:2px solid; border-right:2px solid; }
+  .scan-line{
+    position:absolute; left:8%; width:84%; height:2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    animation: scan 3.2s ease-in-out infinite;
+    box-shadow: 0 0 12px 1px var(--gold);
+  }
+  @keyframes scan{
+    0%,100%{ top:14%; opacity:0.2; }
+    50%{ top:86%; opacity:1; }
+  }
+  .scan-tag{
+    position:absolute; bottom:16px; left:16px; right:16px;
+    color:#E8E2CC; font-size:0.72rem; display:flex; justify-content:space-between;
+    opacity:0.75;
+  }
+
+  /* ---------- SECTION shared ---------- */
+  section{ padding:64px 6vw; }
+  .section-head{ margin-bottom:36px; max-width:60ch; }
+  .section-head .tag{ font-size:0.75rem; color:var(--rust); text-transform:uppercase; font-weight:600; margin-bottom:8px; display:block;}
+  .section-head h2{ font-size:2rem; margin:0 0 10px; font-weight:600; }
+  .section-head p{ color:var(--muted); margin:0; line-height:1.6; }
+
+  /* ---------- DETECTOR ---------- */
+  .detector{
+    background:var(--card); border:1px solid var(--line); border-radius:18px;
+    padding:0; overflow:hidden;
+    display:grid; grid-template-columns: 1fr 1fr;
+  }
+  .detector-left{ padding:36px; border-right:1px solid var(--line); }
+  .detector-right{ padding:36px; }
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .tab-btn{
+    flex:1; padding:10px; border-radius:8px; border:1px solid var(--line);
+    background:transparent; cursor:pointer; font-family:'Inter'; font-weight:600; font-size:0.85rem;
+    color:var(--muted);
+  }
+  .tab-btn.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+  .dropzone{
+    border:2px dashed var(--line); border-radius:14px; padding:36px 20px;
+    text-align:center; cursor:pointer; position:relative; min-height:260px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    transition: border-color .2s;
+  }
+  .dropzone:hover{ border-color:var(--gold); }
+  .dropzone img, #camera-video, #camera-canvas{
+    max-width:100%; max-height:240px; border-radius:10px; display:none;
+  }
+  .dropzone.has-image img{ display:block; }
+  .dz-icon{ font-size:2.2rem; margin-bottom:10px; }
+  .dz-text{ color:var(--muted); font-size:0.9rem; }
+  #file-input{ display:none; }
+
+  #camera-wrap{ display:none; flex-direction:column; align-items:center; gap:12px; }
+  #camera-wrap.active{ display:flex; }
+  #camera-video{ display:block; border-radius:10px; }
+
+  .diagnose-btn{ width:100%; margin-top:18px; justify-content:center; }
+  .diagnose-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  .status-line{ font-size:0.85rem; color:var(--muted); margin-top:12px; min-height:20px; }
+
+  /* result card */
+  #result-empty{ color:var(--muted); font-size:0.92rem; line-height:1.6; }
+  .spec-card{ display:none; }
+  .spec-card.show{ display:block; animation: fadeIn .4s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+  .spec-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+  .spec-num{ font-size:0.7rem; color:var(--muted); }
+  .spec-plant{ font-size:0.85rem; color:var(--muted); margin:2px 0 2px; }
+  .spec-disease{ font-size:1.5rem; font-weight:600; margin:0; }
+  .badge{
+    padding:4px 12px; border-radius:100px; font-size:0.7rem; font-weight:700;
+    text-transform:uppercase; white-space:nowrap; height:fit-content;
+  }
+  .badge.sehat{ background:rgba(76,122,82,0.15); color:var(--healthy); }
+  .badge.ringan{ background:rgba(201,154,62,0.18); color:#9a7423; }
+  .badge.sedang{ background:rgba(201,154,62,0.25); color:#8a5f16; }
+  .badge.tinggi, .badge.sangat{ background:rgba(168,70,46,0.16); color:var(--rust); }
+
+  .ai-tag{
+    font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;
+    padding:3px 9px; border-radius:100px; display:inline-flex; align-items:center; gap:4px;
+  }
+  .ai-tag.yes{ background:rgba(76,122,82,0.15); color:var(--healthy); }
+  .ai-tag.no{ background:rgba(107,101,82,0.12); color:var(--muted); }
+
+  .confidence-bar{ height:6px; background:var(--paper-dark); border-radius:100px; overflow:hidden; margin:6px 0 18px;}
+  .confidence-fill{ height:100%; background:var(--gold); border-radius:100px; }
+
+  .spec-block{ margin-bottom:16px; }
+  .spec-block h4{ font-size:0.72rem; text-transform:uppercase; color:var(--muted); margin:0 0 6px; letter-spacing:0.05em; }
+  .spec-block p{ margin:0; line-height:1.6; font-size:0.92rem; }
+  .obat-box{
+    background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-top:6px;
+  }
+
+  /* ---------- CATALOG / SEARCH ---------- */
+  .search-bar{
+    display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap; align-items:center;
+  }
+  .search-input-wrap{
+    flex:1; min-width:220px; display:flex; align-items:center; gap:10px;
+    background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px;
+  }
+  .search-input-wrap input{
+    border:none; outline:none; background:transparent; width:100%; font-family:'Inter'; font-size:0.95rem; color:var(--ink);
+  }
+  .filter-chip{
+    padding:9px 16px; border-radius:100px; border:1px solid var(--line); background:transparent;
+    cursor:pointer; font-size:0.82rem; font-weight:600; color:var(--muted);
+  }
+  .filter-chip.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+
+  .catalog-grid{
+    display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap:18px;
+  }
+  .cat-card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px;
+    cursor:pointer; transition: transform .15s, box-shadow .15s;
+  }
+  .cat-card:hover{ transform:translateY(-3px); box-shadow:0 12px 26px -16px rgba(18,39,32,0.35); }
+  .cat-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;}
+  .cat-emoji{ font-size:1.8rem; }
+  .cat-plant{ font-size:0.75rem; color:var(--muted); margin:0 0 4px; }
+  .cat-disease{ font-size:1.05rem; font-weight:600; margin:0 0 8px; line-height:1.3; }
+  .cat-desc{ font-size:0.83rem; color:var(--muted); line-height:1.5; margin:0; }
+
+  .no-results{ color:var(--muted); text-align:center; padding:40px 0; grid-column:1/-1; }
+
+  /* ---------- MODAL ---------- */
+  #modal-overlay{
+    position:fixed; inset:0; background:rgba(18,39,32,0.55); display:none;
+    align-items:center; justify-content:center; padding:24px; z-index:100;
+  }
+  #modal-overlay.show{ display:flex; }
+  #modal{
+    background:var(--card); border-radius:18px; max-width:560px; width:100%;
+    max-height:86vh; overflow-y:auto; padding:32px; position:relative;
+  }
+  #modal-close{
+    position:absolute; top:18px; right:18px; background:var(--paper); border:none;
+    width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1rem;
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    padding:40px 6vw; border-top:1px solid var(--line); text-align:center;
+    color:var(--muted); font-size:0.85rem;
+  }
+
+  @media (max-width: 860px){
+    .hero{ grid-template-columns:1fr; }
+    .detector{ grid-template-columns:1fr; }
+    .detector-left{ border-right:none; border-bottom:1px solid var(--line); }
+    .nav-links{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand"><span class="brand-mark">🌿</span> Plant Doctor</div>
+  <div class="nav-links">
+    <a href="#deteksi">Deteksi</a>
+    <a href="#katalog">Katalog Penyakit</a>
+    <a href="#tentang">Tentang</a>
+  </div>
+  <a href="#deteksi" class="btn btn-primary" style="padding:9px 18px; font-size:0.85rem;">Mulai Diagnosis</a>
+</nav>
+
+<header class="hero">
+  <div>
+    <span class="eyebrow">Ditenagai Computer Vision · PlantVillage Dataset</span>
+    <h1>Foto daunnya,<br><em>kami bacakan diagnosisnya.</em></h1>
+    <p>Plant Doctor membaca gejala pada daun atau ranting lewat foto, lalu mencocokkannya dengan katalog 38 kondisi tanaman — lengkap dengan cara merawat dan rekomendasi obatnya.</p>
+    <a href="#deteksi" class="btn btn-primary">📷 Diagnosis Sekarang</a>
+    <a href="#katalog" class="btn btn-ghost" style="margin-left:10px;">Jelajahi Katalog</a>
+  </div>
+  <div class="scan-visual">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="scan-line"></div>
+    <svg viewBox="0 0 200 200" fill="none">
+      <path d="M100 20 C40 40 30 110 60 160 C75 185 125 185 140 160 C170 110 160 40 100 20 Z" stroke="#E8E2CC" stroke-width="2" opacity="0.7"/>
+      <path d="M100 30 L100 165 M100 70 L65 55 M100 90 L140 75 M100 115 L60 105 M100 135 L145 120" stroke="#E8E2CC" stroke-width="1.4" opacity="0.5"/>
+    </svg>
+    <div class="scan-tag">
+      <span class="mono">SPEC.SCAN// AKTIF</span>
+      <span class="mono">38 KELAS</span>
+    </div>
+  </div>
+</header>
+
+<section id="deteksi">
+  <div class="section-head">
+    <span class="tag">Diagnosis</span>
+    <h2>Unggah atau ambil foto daun</h2>
+    <p>Ambil dari galeri atau langsung foto dengan kamera. Untuk hasil terbaik, foto dari jarak dekat, cahaya cukup, dan fokus pada bagian daun yang bergejala.</p>
+  </div>
+
+  <div class="detector">
+    <div class="detector-left">
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-upload">📁 Unggah Foto</button>
+        <button class="tab-btn" id="tab-camera">📷 Ambil Foto Langsung</button>
+      </div>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="file-input" accept="image/*">
+        <img id="preview-img" alt="preview">
+        <div id="dz-placeholder">
+          <div class="dz-icon">🍃</div>
+          <div class="dz-text">Klik untuk pilih foto, atau seret & lepas di sini</div>
+        </div>
+      </div>
+
+      <div id="camera-wrap">
+        <video id="camera-video" autoplay playsinline></video>
+        <canvas id="camera-canvas" style="display:none;"></canvas>
+        <button class="btn btn-ghost" id="capture-btn" type="button">📸 Jepret</button>
+      </div>
+
+      <button class="btn btn-primary diagnose-btn" id="diagnose-btn" disabled>🔬 Diagnosis Foto Ini</button>
+      <div class="status-line" id="status-line"></div>
+    </div>
+
+    <div class="detector-right">
+      <div id="result-empty">
+        Hasil diagnosis akan muncul di sini setelah kamu mengunggah atau memotret daun tanaman. Sertakan bagian yang menunjukkan gejala paling jelas (bercak, layu, atau perubahan warna) agar hasil lebih akurat.
+      </div>
+      <div class="spec-card" id="spec-card">
+        <div class="spec-head">
+          <div>
+            <div class="spec-num mono" id="spec-num">SPEC. 000</div>
+            <div class="spec-plant" id="spec-plant">Tanaman</div>
+            <h3 class="spec-disease" id="spec-disease">Nama Penyakit</h3>
+          </div>
+          <span class="badge" id="spec-badge">-</span>
+        </div>
+
+        <div class="mono" style="font-size:0.72rem; color:var(--muted);">TINGKAT KEYAKINAN MODEL</div>
+        <div class="confidence-bar"><div class="confidence-fill" id="confidence-fill" style="width:0%"></div></div>
+        <div id="confidence-text" class="mono" style="font-size:0.75rem; color:var(--muted); margin-top:-12px;"></div>
+
+        <div class="spec-block">
+          <h4>Deskripsi</h4>
+          <p id="spec-desc"></p>
+        </div>
+        <div class="spec-block">
+          <h4>Gejala</h4>
+          <p id="spec-gejala"></p>
+        </div>
+        <div class="spec-block">
+          <h4>Cara Merawat</h4>
+          <p id="spec-perawatan"></p>
+        </div>
+        <div class="spec-block">
+          <h4>Rekomendasi Obat</h4>
+          <div class="obat-box" id="spec-obat"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="katalog">
+  <div class="section-head">
+    <span class="tag">Katalog</span>
+    <h2>Cari tanaman atau penyakit secara manual</h2>
+    <p>Belum sempat foto? Jelajahi katalog 38 kondisi tanaman — ketik nama tanaman seperti "tomat", "kentang", atau "jagung", atau nama penyakitnya langsung.</p>
+  </div>
+
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <span>🔍</span>
+      <input type="text" id="search-input" placeholder="Cari: tomat, kentang, karat daun, embun tepung...">
+    </div>
+    <button class="filter-chip active" data-filter="semua">Semua</button>
+    <button class="filter-chip" data-filter="sakit">Sakit</button>
+    <button class="filter-chip" data-filter="sehat">Sehat</button>
+    <button class="filter-chip" data-filter="ai">✅ Bisa Dideteksi Foto</button>
+  </div>
+  <p style="font-size:0.82rem; color:var(--muted); margin:-16px 0 24px;">
+    ✅ <b>Bisa Dideteksi Foto</b> = termasuk 38 kelas yang dikenali model AI lewat foto. Yang tidak bertanda hanya bisa dicek lewat pencarian manual di katalog ini (model AI belum dilatih mengenali penyakit tersebut dari foto).
+  </p>
+
+  <div class="catalog-grid" id="catalog-grid"></div>
+</section>
+
+<section id="tentang">
+  <div class="section-head">
+    <span class="tag">Tentang Proyek</span>
+    <h2>Bagaimana Plant Doctor bekerja</h2>
+    <p>Proyek Tugas Akhir (UAS) Artificial Intelligence. Foto daun dianalisis oleh model computer vision (MobileNetV2) yang dilatih pada dataset PlantVillage (38 kelas kondisi tanaman), lalu hasilnya dicocokkan dengan basis data perawatan &amp; rekomendasi obat.</p>
+  </div>
+</section>
+
+<footer>
+  Dibuat untuk Tugas Akhir (UAS) Mata Kuliah Artificial Intelligence · Plant Doctor © 2026
+</footer>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <button id="modal-close">✕</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = ''; // kosong = pakai host yang sama (frontend & backend satu server)
+
+const EMOJI = {
+  "Apel":"🍎","Blueberry":"🫐","Ceri":"🍒","Jagung":"🌽","Anggur":"🍇","Jeruk":"🍊",
+  "Persik":"🍑","Paprika/Cabai Bell":"🫑","Kentang":"🥔","Rasberi":"🍇","Kedelai":"🫘",
+  "Labu":"🎃","Stroberi":"🍓","Tomat":"🍅","Padi":"🌾","Cabai":"🌶️","Terong":"🍆",
+  "Timun":"🥒","Kubis":"🥬","Bawang Merah":"🧅","Kacang Panjang":"🫛","Singkong":"🥔",
+  "Kacang Tanah":"🥜","Ubi Jalar":"🍠"
+};
+
+let currentImageBlob = null;
+let currentMode = 'upload';
+let cameraStream = null;
+let allDiseases = [];
+let activeFilter = 'semua';
+
+/* ---------- TAB SWITCH ---------- */
+const tabUpload = document.getElementById('tab-upload');
+const tabCamera = document.getElementById('tab-camera');
+const dropzone = document.getElementById('dropzone');
+const cameraWrap = document.getElementById('camera-wrap');
+
+tabUpload.onclick = () => switchTab('upload');
+tabCamera.onclick = () => switchTab('camera');
+
+function switchTab(mode){
+  currentMode = mode;
+  tabUpload.classList.toggle('active', mode==='upload');
+  tabCamera.classList.toggle('active', mode==='camera');
+  dropzone.style.display = mode==='upload' ? 'flex' : 'none';
+  cameraWrap.classList.toggle('active', mode==='camera');
+  if(mode==='camera') startCamera(); else stopCamera();
+}
+
+/* ---------- UPLOAD ---------- */
+const fileInput = document.getElementById('file-input');
+const previewImg = document.getElementById('preview-img');
+const dzPlaceholder = document.getElementById('dz-placeholder');
+const diagnoseBtn = document.getElementById('diagnose-btn');
+const statusLine = document.getElementById('status-line');
+
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  if(e.target.files[0]) handleFile(e.target.files[0]);
+});
+dropzone.addEventListener('dragover', e => { e.preventDefault(); });
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file){
+  currentImageBlob = file;
+  const url = URL.createObjectURL(file);
+  previewImg.src = url;
+  dropzone.classList.add('has-image');
+  dzPlaceholder.style.display = 'none';
+  diagnoseBtn.disabled = false;
+  statusLine.textContent = '';
+}
+
+/* ---------- CAMERA ---------- */
+const cameraVideo = document.getElementById('camera-video');
+const cameraCanvas = document.getElementById('camera-canvas');
+const captureBtn = document.getElementById('capture-btn');
+
+async function startCamera(){
+  try{
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    cameraVideo.srcObject = cameraStream;
+    cameraVideo.style.display = 'block';
+  }catch(err){
+    statusLine.textContent = 'Tidak bisa mengakses kamera: ' + err.message;
+  }
+}
+function stopCamera(){
+  if(cameraStream){ cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+}
+captureBtn.onclick = () => {
+  cameraCanvas.width = cameraVideo.videoWidth;
+  cameraCanvas.height = cameraVideo.videoHeight;
+  cameraCanvas.getContext('2d').drawImage(cameraVideo, 0, 0);
+  cameraCanvas.toBlob(blob => {
+    currentImageBlob = blob;
+    previewImg.src = URL.createObjectURL(blob);
+    diagnoseBtn.disabled = false;
+    statusLine.textContent = 'Foto berhasil diambil. Siap dianalisis.';
+  }, 'image/jpeg', 0.92);
+};
+
+/* ---------- DIAGNOSE ---------- */
+diagnoseBtn.onclick = async () => {
+  if(!currentImageBlob) return;
+  diagnoseBtn.disabled = true;
+  diagnoseBtn.textContent = '⏳ Menganalisis...';
+  statusLine.textContent = 'Mengirim gambar ke model AI, mohon tunggu...';
+
+  const formData = new FormData();
+  formData.append('image', currentImageBlob, 'leaf.jpg');
+
+  try{
+    const res = await fetch(API_BASE + '/api/detect', { method:'POST', body: formData });
+    const data = await res.json();
+    if(!res.ok){
+      statusLine.textContent = '⚠️ ' + (data.error || 'Terjadi kesalahan.');
+      return;
+    }
+    renderResult(data);
+    statusLine.textContent = 'Diagnosis selesai.';
+  }catch(err){
+    statusLine.textContent = '⚠️ Gagal terhubung ke server: ' + err.message;
+  }finally{
+    diagnoseBtn.disabled = false;
+    diagnoseBtn.textContent = '🔬 Diagnosis Foto Ini';
+  }
+};
+
+function severityClass(tingkat){
+  if(!tingkat) return 'sehat';
+  tingkat = tingkat.toLowerCase();
+  if(tingkat.includes('tidak ada')) return 'sehat';
+  if(tingkat.includes('sangat')) return 'sangat';
+  if(tingkat.includes('tinggi')) return 'tinggi';
+  if(tingkat.includes('sedang')) return 'sedang';
+  return 'ringan';
+}
+
+function renderResult(data){
+  const info = data.info;
+  document.getElementById('result-empty').style.display = 'none';
+  const card = document.getElementById('spec-card');
+  card.classList.add('show');
+
+  document.getElementById('spec-num').textContent = 'SPEC. ' + data.prediksi_mentah.slice(0,3).toUpperCase();
+  document.getElementById('spec-plant').textContent = (EMOJI[info.tanaman]||'🌱') + '  ' + info.tanaman;
+  document.getElementById('spec-disease').textContent = info.penyakit;
+
+  const badge = document.getElementById('spec-badge');
+  const sev = severityClass(info.tingkat_keparahan);
+  badge.className = 'badge ' + sev;
+  badge.textContent = info.status === 'sehat' ? 'Sehat' : (info.tingkat_keparahan || 'Sakit');
+
+  const pct = Math.round(data.confidence * 100);
+  document.getElementById('confidence-fill').style.width = pct + '%';
+  document.getElementById('confidence-text').textContent = pct + '% yakin — ' + data.prediksi_mentah;
+
+  document.getElementById('spec-desc').textContent = info.deskripsi;
+  document.getElementById('spec-gejala').textContent = info.gejala;
+  document.getElementById('spec-perawatan').textContent = info.perawatan;
+  document.getElementById('spec-obat').textContent = info.rekomendasi_obat;
+}
+
+/* ---------- CATALOG / SEARCH ---------- */
+const catalogGrid = document.getElementById('catalog-grid');
+const searchInput = document.getElementById('search-input');
+const filterChips = document.querySelectorAll('.filter-chip');
+
+async function loadCatalog(){
+  try{
+    const res = await fetch(API_BASE + '/api/diseases');
+    allDiseases = await res.json();
+    renderCatalog();
+  }catch(err){
+    catalogGrid.innerHTML = '<div class="no-results">Gagal memuat katalog. Pastikan server backend berjalan.</div>';
+  }
+}
+
+function renderCatalog(){
+  const q = searchInput.value.toLowerCase().trim();
+  let list = allDiseases.filter(d =>
+    d.tanaman.toLowerCase().includes(q) ||
+    d.penyakit.toLowerCase().includes(q) ||
+    d.deskripsi.toLowerCase().includes(q)
+  );
+  if(activeFilter === 'ai') list = list.filter(d => !!d.terdeteksi_ai);
+  else if(activeFilter !== 'semua') list = list.filter(d => d.status === activeFilter);
+
+  if(list.length === 0){
+    catalogGrid.innerHTML = '<div class="no-results">Tidak ditemukan hasil untuk pencarian ini.</div>';
+    return;
+  }
+
+  catalogGrid.innerHTML = list.map((d, i) => `
+    <div class="cat-card" data-label="${d.label}">
+      <div class="cat-top">
+        <span class="cat-emoji">${EMOJI[d.tanaman]||'🌱'}</span>
+        <span class="badge ${severityClass(d.tingkat_keparahan)}">${d.status==='sehat'?'Sehat':(d.tingkat_keparahan||'Sakit')}</span>
+      </div>
+      <div class="cat-plant">${d.tanaman}</div>
+      <div class="cat-disease">${d.penyakit}</div>
+      <p class="cat-desc">${d.deskripsi}</p>
+      <span class="ai-tag ${d.terdeteksi_ai ? 'yes':'no'}">${d.terdeteksi_ai ? '✅ Bisa dideteksi foto' : '🔍 Cari manual saja'}</span>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.cat-card').forEach(card => {
+    card.onclick = () => openModal(card.dataset.label);
+  });
+}
+
+searchInput.addEventListener('input', renderCatalog);
+filterChips.forEach(chip => {
+  chip.onclick = () => {
+    filterChips.forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    activeFilter = chip.dataset.filter;
+    renderCatalog();
+  };
+});
+
+/* ---------- MODAL ---------- */
+const modalOverlay = document.getElementById('modal-overlay');
+const modalBody = document.getElementById('modal-body');
+document.getElementById('modal-close').onclick = () => modalOverlay.classList.remove('show');
+modalOverlay.onclick = (e) => { if(e.target === modalOverlay) modalOverlay.classList.remove('show'); };
+
+function openModal(label){
+  const d = allDiseases.find(x => x.label === label);
+  if(!d) return;
+  modalBody.innerHTML = `
+    <div style="font-size:2rem; margin-bottom:6px;">${EMOJI[d.tanaman]||'🌱'}</div>
+    <div class="cat-plant">${d.tanaman}</div>
+    <h3 class="spec-disease" style="margin-bottom:14px;">${d.penyakit}</h3>
+    <div class="spec-block"><h4>Deskripsi</h4><p>${d.deskripsi}</p></div>
+    <div class="spec-block"><h4>Gejala</h4><p>${d.gejala}</p></div>
+    <div class="spec-block"><h4>Cara Merawat</h4><p>${d.perawatan}</p></div>
+    <div class="spec-block"><h4>Rekomendasi Obat</h4><div class="obat-box">${d.rekomendasi_obat}</div></div>
+  `;
+  modalOverlay.classList.add('show');
+}
+
+loadCatalog();
+</script>
+</body>
+</html>
