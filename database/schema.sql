@@ -3,9 +3,6 @@
 -- Import lewat phpMyAdmin (XAMPP) atau: mysql -u root -p < schema.sql
 -- =========================================================
 
-CREATE DATABASE IF NOT EXISTS plant_doctor CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE plant_doctor;
-
 DROP TABLE IF EXISTS diseases;
 
 CREATE TABLE diseases (

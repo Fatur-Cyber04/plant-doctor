@@ -204,6 +204,10 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Plant Doctor server berjalan di http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Plant Doctor server berjalan di http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
